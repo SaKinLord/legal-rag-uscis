@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+
+# Data - depends on whether you commit example data or not
+# For now, let's ignore raw and processed data from git
+data/raw/*
+data/processed/*
+# If you want to commit a small sample, you can negate it:
+# !data/raw/sample_decision.pdf 
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
