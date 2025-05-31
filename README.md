@@ -33,11 +33,10 @@ This project was developed as an AI Internship Homework assignment, with a focus
 1.  **Clone the Repository (or Unzip Project Files):**
     If this were a Git repository:
     ```bash
-    git clone https://github.com/SaKinLord/legal-rag-uscis-internship
-    cd legal_rag_uscis
+    git clone <repository_url>
+    cd legal_rag_uscis_enhanced # Or your project directory name
     ```
     Otherwise, extract your project files to a root directory.
-
 
 2.  **Create and Activate a Python Virtual Environment:**
     Navigate to the project root directory and run:
@@ -109,10 +108,8 @@ Run these scripts from the **project root directory** using the `python -m src.<
     *Example Queries (from assignment PDF):*
     *   `How do recent AAO decisions evaluate an applicant's Participation as a Judge service criteria?`
     *   `What characteristics of national or international awards persuade the AAO that they constitute 'sustained acclaim'?`
-4.  The system will process your query, retrieve relevant context, and generate an answer with citations.
-5.  After the answer is displayed, you will be prompted for another query.
-6.  To exit the application, type `quit` or `exit` at the query prompt and press Enter.
-
+4.  The system will display detailed processing information (if logging is enabled in `rag_enhanced.py`) and then the LLM's answer with citations.
+5.  Type `quit` or `exit` to stop.
 
 ## 5. Advanced Components & Testing (Optional)
 
@@ -152,6 +149,7 @@ The `tests/` directory contains various scripts to test individual components an
 *   Other scripts like `run_comparative_analysis.py` and `run_full_benchmark.py` offer more in-depth performance insights and may take longer to run.
 
 ## 6. Project Structure Overview
+
 legal_rag_uscis_enhanced/
 ├── .env # Local environment variables (API KEY - NOT COMMITTED)
 ├── .env.example # Example for .env
@@ -193,3 +191,4 @@ legal_rag_uscis_enhanced/
 *   **Caching Strategy:** A hybrid caching approach (memory, disk, with Redis support) is implemented to optimize performance for repeated operations.
 *   **Data-Driven Optimization:** The `ChunkingOptimizer` provides a means to empirically determine effective chunking strategies.
 *   **Comprehensive Evaluation:** The `RAGEvaluator` allows for detailed metrics on both retrieval and generation quality.
+
