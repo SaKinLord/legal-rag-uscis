@@ -152,37 +152,39 @@ The `tests/` directory contains various scripts to test individual components an
 *   Other scripts like `run_comparative_analysis.py` and `run_full_benchmark.py` offer more in-depth performance insights and may take longer to run.
 
 ## 6. Project Structure Overview
+6. Project Structure Overview
+
 legal_rag_uscis_enhanced/
-├── .env # Local environment variables (API KEY - NOT COMMITTED)
-├── .env.example # Example for .env
-├── .gitignore # Specifies intentionally untracked files
-├── README.md # This file
-├── requirements.txt # Python dependencies
-├── cache/ # Default directory for disk cache (if used by CacheManager)
-├── data/
-│ ├── raw/ # Stores downloaded PDF files from acquire.py
-│ └── processed/ # Stores processed JSON files from process.py
-├── notebooks/ # Jupyter notebooks for experimentation (if any)
-├── src/ # Source code
-│ ├── init.py
-│ ├── acquire.py # Data acquisition
-│ ├── process.py # PDF processing and metadata extraction
-│ ├── store.py # Chunking, embedding, and storing in ChromaDB
-│ ├── config.py # Configuration (e.g., API key loading)
-│ ├── query_preprocessor.py # Query normalization, expansion, intent
-│ ├── cache_manager.py # Caching logic
-│ ├── rag_enhanced.py # Core enhanced RAG pipeline logic
-│ ├── main.py # CLI entry point
-│ ├── chunking_optimizer.py # Script to find optimal chunking params
-│ └── evaluation_metrics.py # Script for RAG evaluation
-├── tests/ # Test scripts and test-generated outputs
-│ ├── init.py
-│ ├── run_all_tests.py
-│ ├── test_.py # Individual component tests
-│ ├── run_.py # Benchmarking/analysis scripts
-│ ├── chunking_results/ # Output from chunking optimizer
-│ └── evaluation_results/ # Output from evaluation framework
-└── vector_db/ # ChromaDB persistent storage (NOT COMMITTED)
+  |— .env # Local environment variables (API KEY - NOT COMMITTED)
+  |— .env.example # Example for .env
+  |— .gitignore # Specifies intentionally untracked files
+  |— README.md # This file
+requirements.txt # Python dependencies
+cache/ # Default directory for disk cache (if used by CacheManager)
+|— data/
+|— raw/ # Stores downloaded PDF files from acquire.py
+|— processed/ # Stores processed JSON files from process.py
+|— notebooks/ # Jupyter notebooks for experimentation (if any)
+|— src/ # Source code
+  |— __init__.py
+  |— acquire.py # Data acquisition
+  |— process.py # PDF processing and metadata extraction
+  |— store.py # Chunking, embedding, and storing in ChromaDB
+  |— config.py # Configuration (e.g., API key loading)
+  |— query_preprocessor.py # Query normalization, expansion, intent
+  |— cache_manager.py # Caching logic
+  |— rag_enhanced.py # Core enhanced RAG pipeline logic
+  |— main.py # CLI entry point
+  |— chunking_optimizer.py # Script to find optimal chunking params
+  |— evaluation_metrics.py # Script for RAG evaluation
+  |— tests/ # Test scripts and test-generated outputs
+  |— __init__.py
+  |— run_all_tests.py
+  |— test_.py # Individual component tests
+  |— run_.py # Benchmarking/analysis scripts
+  |— chunking_results/ # Output from chunking optimizer
+  |— evaluation_results/ # Output from evaluation framework
+  |— vector_db/ # ChromaDB persistent storage (NOT COMMITTED)
 
 
 ## 7. Key Design Aspects of the Enhanced System
