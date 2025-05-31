@@ -149,7 +149,7 @@ The `tests/` directory contains various scripts to test individual components an
 *   Other scripts like `run_comparative_analysis.py` and `run_full_benchmark.py` offer more in-depth performance insights and may take longer to run.
 
 ## 6. Project Structure Overview
-'''
+```
 legal_rag_uscis_enhanced/
 ├── .env                           # Local environment variables (API KEY - NOT COMMITTED)
 ├── .env.example                   # Example for .env
@@ -181,7 +181,7 @@ legal_rag_uscis_enhanced/
 │   ├── chunking_results/          # Output from chunking optimizer
 │   └── evaluation_results/        # Output from evaluation framework
 └── vector_db/                     # ChromaDB persistent storage (NOT COMMITTED)
-'''
+```
 
 
 ## 7. Key Design Aspects of the Enhanced System
