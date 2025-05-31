@@ -1,4 +1,4 @@
-# Enhanced Legal RAG System for USCIS AAO Decisions
+﻿# Enhanced Legal RAG System for USCIS AAO Decisions
 
 ## 1. About The Project
 
@@ -146,14 +146,12 @@ The `tests/` directory contains various scripts to test individual components an
     ```bash
     cd tests
     python run_all_tests.py
-    cd ..
+    cd .. 
     ```
 *   This script orchestrates several other test scripts (`test_query_preprocessor.py`, `test_cache_manager.py`, `test_enhanced_rag.py`).
 *   Other scripts like `run_comparative_analysis.py` and `run_full_benchmark.py` offer more in-depth performance insights and may take longer to run.
 
 ## 6. Project Structure Overview
-
-```text
 legal_rag_uscis_enhanced/
 ├── .env # Local environment variables (API KEY - NOT COMMITTED)
 ├── .env.example # Example for .env
@@ -162,35 +160,36 @@ legal_rag_uscis_enhanced/
 ├── requirements.txt # Python dependencies
 ├── cache/ # Default directory for disk cache (if used by CacheManager)
 ├── data/
-│   ├── raw/ # Stores downloaded PDF files from acquire.py
-│   └── processed/ # Stores processed JSON files from process.py
+│ ├── raw/ # Stores downloaded PDF files from acquire.py
+│ └── processed/ # Stores processed JSON files from process.py
 ├── notebooks/ # Jupyter notebooks for experimentation (if any)
 ├── src/ # Source code
-│   ├── init.py
-│   ├── acquire.py # Data acquisition
-│   ├── process.py # PDF processing and metadata extraction
-│   ├── store.py # Chunking, embedding, and storing in ChromaDB
-│   ├── config.py # Configuration (e.g., API key loading)
-│   ├── query_preprocessor.py # Query normalization, expansion, intent
-│   ├── cache_manager.py # Caching logic
-│   ├── rag_enhanced.py # Core enhanced RAG pipeline logic
-│   ├── main.py # CLI entry point
-│   ├── chunking_optimizer.py # Script to find optimal chunking params
-│   └── evaluation_metrics.py # Script for RAG evaluation
+│ ├── init.py
+│ ├── acquire.py # Data acquisition
+│ ├── process.py # PDF processing and metadata extraction
+│ ├── store.py # Chunking, embedding, and storing in ChromaDB
+│ ├── config.py # Configuration (e.g., API key loading)
+│ ├── query_preprocessor.py # Query normalization, expansion, intent
+│ ├── cache_manager.py # Caching logic
+│ ├── rag_enhanced.py # Core enhanced RAG pipeline logic
+│ ├── main.py # CLI entry point
+│ ├── chunking_optimizer.py # Script to find optimal chunking params
+│ └── evaluation_metrics.py # Script for RAG evaluation
 ├── tests/ # Test scripts and test-generated outputs
-│   ├── init.py
-│   ├── run_all_tests.py
-│   ├── test_.py # Individual component tests
-│   ├── run_.py # Benchmarking/analysis scripts
-│   ├── chunking_results/ # Output from chunking optimizer
-│   └── evaluation_results/ # Output from evaluation framework
+│ ├── init.py
+│ ├── run_all_tests.py
+│ ├── test_.py # Individual component tests
+│ ├── run_.py # Benchmarking/analysis scripts
+│ ├── chunking_results/ # Output from chunking optimizer
+│ └── evaluation_results/ # Output from evaluation framework
 └── vector_db/ # ChromaDB persistent storage (NOT COMMITTED)
-```
-7. Key Design Aspects of the Enhanced System
-Modular Design: Components like query preprocessing, caching, retrieval, and generation are separated for clarity and maintainability.
-Query Understanding: The LegalQueryPreprocessor enhances user queries to improve the relevance of retrieved context.
-Intent-Driven Prompts: Prompts sent to the LLM are tailored based on the identified intent of the user's query.
-Caching Strategy: A hybrid caching approach (memory, disk, with Redis support) is implemented to optimize performance for repeated operations.
-Data-Driven Optimization: The ChunkingOptimizer provides a means to empirically determine effective chunking strategies.
-Comprehensive Evaluation: The RAGEvaluator allows for detailed metrics on both retrieval and generation quality.
 
+
+## 7. Key Design Aspects of the Enhanced System
+
+*   **Modular Design:** Components like query preprocessing, caching, retrieval, and generation are separated for clarity and maintainability.
+*   **Query Understanding:** The `LegalQueryPreprocessor` enhances user queries to improve the relevance of retrieved context.
+*   **Intent-Driven Prompts:** Prompts sent to the LLM are tailored based on the identified intent of the user's query.
+*   **Caching Strategy:** A hybrid caching approach (memory, disk, with Redis support) is implemented to optimize performance for repeated operations.
+*   **Data-Driven Optimization:** The `ChunkingOptimizer` provides a means to empirically determine effective chunking strategies.
+*   **Comprehensive Evaluation:** The `RAGEvaluator` allows for detailed metrics on both retrieval and generation quality.
