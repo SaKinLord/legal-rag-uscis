@@ -185,3 +185,12 @@ legal_rag_uscis_enhanced/
 │   ├── chunking_results/ # Output from chunking optimizer
 │   └── evaluation_results/ # Output from evaluation framework
 └── vector_db/ # ChromaDB persistent storage (NOT COMMITTED)
+
+7. Key Design Aspects of the Enhanced System
+Modular Design: Components like query preprocessing, caching, retrieval, and generation are separated for clarity and maintainability.
+Query Understanding: The LegalQueryPreprocessor enhances user queries to improve the relevance of retrieved context.
+Intent-Driven Prompts: Prompts sent to the LLM are tailored based on the identified intent of the user's query.
+Caching Strategy: A hybrid caching approach (memory, disk, with Redis support) is implemented to optimize performance for repeated operations.
+Data-Driven Optimization: The ChunkingOptimizer provides a means to empirically determine effective chunking strategies.
+Comprehensive Evaluation: The RAGEvaluator allows for detailed metrics on both retrieval and generation quality.
+
