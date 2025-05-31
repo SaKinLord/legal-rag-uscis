@@ -193,4 +193,3 @@ legal_rag_uscis_enhanced/
 *   **Caching Strategy:** A hybrid caching approach (memory, disk, with Redis support) is implemented to optimize performance for repeated operations.
 *   **Data-Driven Optimization:** The `ChunkingOptimizer` provides a means to empirically determine effective chunking strategies.
 *   **Comprehensive Evaluation:** The `RAGEvaluator` allows for detailed metrics on both retrieval and generation quality.
->>>>>>> 12bf586 (Implement enhanced RAG system - Added CacheManager for hybrid caching (memory, disk, Redis fallback); Implemented LegalQueryPreprocessor for improved query understanding; Developed ChunkingOptimizer to find optimal chunking strategies; Created RAGEvaluator for comprehensive performance metrics; Refactored RAG logic into EnhancedRAGPipeline in rag_enhanced.py; Added extensive tests and benchmarking scripts; Updated citation formatting for precision)
