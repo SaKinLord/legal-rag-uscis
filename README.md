@@ -24,7 +24,7 @@ This project was developed as an AI Internship Homework assignment, focusing on 
     If this were a Git repository:
     ```bash
     git clone <repository_url>
-    cd legal_rag_uscis
+    cd legal-rag-uscis-internship
     ```
     Otherwise, ensure you have the project files in a root directory (e.g., `legal_rag_uscis/`).
 
