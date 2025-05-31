@@ -185,7 +185,7 @@ legal_rag_uscis_enhanced/
 │   ├── chunking_results/ # Output from chunking optimizer
 │   └── evaluation_results/ # Output from evaluation framework
 └── vector_db/ # ChromaDB persistent storage (NOT COMMITTED)
-
+```
 7. Key Design Aspects of the Enhanced System
 Modular Design: Components like query preprocessing, caching, retrieval, and generation are separated for clarity and maintainability.
 Query Understanding: The LegalQueryPreprocessor enhances user queries to improve the relevance of retrieved context.
