@@ -21,16 +21,23 @@ else:
     load_dotenv() 
 
 
-# Retrieve the API key
+# Retrieve API keys
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 
-if not GEMINI_API_KEY:
-    print("Warning: GEMINI_API_KEY not found in environment variables or .env file.")
-    print("Please ensure your .env file is in the project root and contains GEMINI_API_KEY='your_key'")
-    # You might want to raise an error or exit if the API key is crucial for all operations
-    # For now, we'll just print a warning.
+# Default to Claude if available, fallback to Gemini
+PREFERRED_LLM = "claude" if CLAUDE_API_KEY else "gemini"
 
-# You can add other configurations here if needed, e.g.,
-# DEFAULT_MODEL_NAME = "gemini-1.5-flash-latest" (or whatever the exact model ID is)
-# VECTOR_DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'vector_db') # Already in store.py
-# COLLECTION_NAME = "aao_decisions" # Already in store.py
+if not GEMINI_API_KEY and not CLAUDE_API_KEY:
+    print("Warning: Neither GEMINI_API_KEY nor CLAUDE_API_KEY found in environment variables or .env file.")
+    print("Please ensure your .env file contains at least one of:")
+    print("GEMINI_API_KEY='your_gemini_key'")
+    print("CLAUDE_API_KEY='your_claude_key'")
+elif CLAUDE_API_KEY:
+    print(f"Using Claude API as preferred LLM provider")
+elif GEMINI_API_KEY:
+    print(f"Using Gemini API as LLM provider")
+
+# Model configurations
+GEMINI_MODEL_NAME = "gemini-1.5-flash-latest"
+CLAUDE_MODEL_NAME = "claude-3-5-sonnet-20241022"  # Latest Claude model with better performance

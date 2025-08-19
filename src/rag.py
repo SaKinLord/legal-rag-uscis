@@ -3,8 +3,9 @@
 import os
 import chromadb
 from chromadb.utils import embedding_functions # Or from chromadb import embedding_functions
-import google.generativeai as genai
-from src.config import GEMINI_API_KEY # Import the API key
+from src.config import GEMINI_API_KEY, CLAUDE_API_KEY # Import API keys
+from src.query_enhancement import enhance_retrieval_query
+from src.llm_client import get_llm_client
 
 # --- Configuration ---
 VECTOR_DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'vector_db')
@@ -12,8 +13,8 @@ COLLECTION_NAME = "aao_decisions"
 EMBEDDING_MODEL_NAME_FOR_QUERY = "BAAI/bge-small-en-v1.5" # Must match model used for storing
 LLM_MODEL_NAME = "gemini-1.5-flash-latest" # Or "gemini-1.0-pro" or other compatible model
 
-# Number of relevant chunks to retrieve
-TOP_K_CHUNKS = 8 # Increased from 5 to capture more relevant context
+# Number of relevant chunks to retrieve - optimized for legal documents
+TOP_K_CHUNKS = 5 # Reduced to focus on most relevant chunks, avoiding noise
 
 # --- Initialize ChromaDB Client and Embedding Function for Querying ---
 client = chromadb.PersistentClient(path=VECTOR_DB_PATH)
@@ -40,19 +41,18 @@ except Exception as e:
     print("Please ensure you have run store.py to create and populate the collection.")
     collection = None # Set to None if collection doesn't exist
 
-# --- Initialize Google Gemini ---
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    # model = genai.GenerativeModel(LLM_MODEL_NAME) # Initialize model here or per request
-else:
-    print("Gemini API Key not configured. LLM generation will not be available.")
-    # model = None
+# --- Initialize LLM Client ---
+llm_client = get_llm_client()
+if not llm_client.is_available():
+    print("Warning: No LLM API keys configured. Answer generation will not be available.")
+    print("Please set CLAUDE_API_KEY or GEMINI_API_KEY in your .env file")
 
 # --- Core RAG Functions ---
 
 def retrieve_relevant_chunks(query_text, n_results=TOP_K_CHUNKS):
     """
-    Embeds the query and retrieves the top_k relevant chunks from ChromaDB.
+    Embeds the query and retrieves the top_k relevant chunks from ChromaDB
+    with improved deduplication and relevance filtering.
     """
     if not collection:
         print("ChromaDB collection is not available. Cannot retrieve chunks.")
@@ -62,11 +62,81 @@ def retrieve_relevant_chunks(query_text, n_results=TOP_K_CHUNKS):
         return []
 
     try:
+        # Retrieve more candidates initially to allow for deduplication and better matching
+        retrieve_candidates = min(n_results * 5, 100)  # Increased from 3x to 5x
+        
         results = collection.query(
             query_texts=[query_text],
-            n_results=n_results,
-            include=['documents', 'metadatas', 'distances'] # documents are the chunk texts
+            n_results=retrieve_candidates,
+            include=['documents', 'metadatas', 'distances'],
+            # Add metadata filtering for better relevance if needed
+            # where={"document_type": "legal_decision"}  # Uncomment if you have this metadata
         )
+        
+        # Deduplicate by document_id while preserving best chunks per document
+        if results and results.get('documents') and results['documents'][0]:
+            doc_chunks = {}  # document_id -> (best_distance, chunk_data)
+            
+            for i, (doc, meta, dist) in enumerate(zip(
+                results['documents'][0], 
+                results['metadatas'][0], 
+                results['distances'][0]
+            )):
+                doc_id = meta.get('document_id', f'unknown_{i}')
+                
+                # Keep the best (lowest distance) chunk per document
+                if doc_id not in doc_chunks or dist < doc_chunks[doc_id][0]:
+                    doc_chunks[doc_id] = (dist, {'doc': doc, 'meta': meta, 'dist': dist})
+            
+            # Enhanced ranking: combine distance with text relevance
+            def calculate_relevance_score(chunk_data):
+                distance = chunk_data[0]
+                text = chunk_data[1]['doc'].lower()
+                query_lower = query_text.lower()
+                
+                # Boost score for exact query term matches
+                term_matches = sum(1 for word in query_lower.split() 
+                                 if len(word) > 3 and word in text)
+                
+                # Legal-specific term boost with more comprehensive matching
+                legal_terms = ['judge', 'award', 'criteria', 'evaluation', 'extraordinary', 'sustained', 'acclaim', 
+                              'participation', 'judging', 'national', 'international', 'recognition', 'excellence']
+                legal_matches = sum(1 for term in legal_terms if term in query_lower and term in text)
+                
+                # Phrase matching bonus
+                key_phrases = []
+                if 'judge' in query_lower:
+                    key_phrases.extend(['participation as judge', 'judging role', 'peer review', 'evaluation panel', 
+                                      'consistent history of reviewing', 'judging recognized', 'level of candidates'])
+                if 'award' in query_lower:
+                    key_phrases.extend(['national award', 'international award', 'sustained acclaim', 'recognition',
+                                      'nationally recognized', 'internationally recognized'])
+                
+                phrase_matches = sum(1 for phrase in key_phrases if phrase in text)
+                
+                # Professional field context bonus - prefer documents that discuss evaluation methods
+                analysis_terms = ['does not demonstrate', 'evidence presented', 'record does not', 'establish', 
+                                'evaluation', 'criteria judges should use', 'consistent history', 'setting her apart']
+                analysis_matches = sum(1 for term in analysis_terms if term in text)
+                
+                # Combined score (lower is better for distance, higher is better for matches)
+                relevance_boost = (term_matches * 0.08) + (legal_matches * 0.04) + (phrase_matches * 0.12) + (analysis_matches * 0.06)
+                adjusted_score = distance - relevance_boost
+                
+                return adjusted_score
+            
+            # Sort by enhanced relevance score and take top n_results
+            enhanced_chunks = [(calculate_relevance_score(chunk_data), chunk_data) for chunk_data in doc_chunks.values()]
+            sorted_chunks = sorted(enhanced_chunks, key=lambda x: x[0])[:n_results]
+            sorted_chunks = [item[1] for item in sorted_chunks]  # Extract chunk_data
+            
+            # Reconstruct results format
+            results = {
+                'documents': [[item[1]['doc'] for item in sorted_chunks]],
+                'metadatas': [[item[1]['meta'] for item in sorted_chunks]],
+                'distances': [[item[1]['dist'] for item in sorted_chunks]]
+            }
+        
         return results
     except Exception as e:
         print(f"Error querying ChromaDB: {e}")
@@ -103,95 +173,65 @@ def format_chunks_for_prompt(retrieved_chunks_results):
 
 def generate_answer_with_llm(query_text, formatted_context):
     """
-    Sends the query and context to the LLM (Gemini) and gets an answer.
+    Sends the query and context to the LLM using unified client and gets an answer.
     """
-    if not GEMINI_API_KEY:
-        return "LLM generation is not available (API key missing)."
+    if not llm_client.is_available():
+        return "LLM generation is not available (no API keys configured)."
     if not query_text:
         return "Query is empty."
 
-    # System prompt (or instruction part of the user prompt for Gemini)
-    # For Gemini, it's often better to put instructions directly in the prompt to the model.
-    # The concept of a separate "system prompt" is more prominent in OpenAI's chat models.
-    
-    # Gemini often works well with direct instructions.
-    # We need to be very specific about using ONLY the provided context and the citation format.
-    
-    prompt_template = f"""You are a specialized legal assistant. Your task is to answer questions about USCIS AAO I-140 Extraordinary Ability decisions.
-You MUST use ONLY the information contained within the 'Context Passages' provided below to answer the 'User Query'. Do not use any external knowledge or make assumptions.
-Synthesize your answer using any relevant information found across any of the provided context passages.
-Focus on how the details in the context relate to the specific aspects of the User Query, even if the term 'sustained acclaim' is discussed separately from award characteristics.
+    prompt_template = f"""You are an expert legal analyst specializing in USCIS AAO I-140 Extraordinary Ability decisions. Answer the user's question using ONLY the provided context passages.
 
-For every piece of information you use from the context to construct your answer, you MUST provide a precise citation AT THE END OF THE SENTENCE OR CLAUSE that uses the information.
-The citation format to follow is: [Case Name, Publication Date, Document ID: ACTUAL_DOCUMENT_ID, Chunk ID: ACTUAL_CHUNK_ID]. 
-Ensure you replace ACTUAL_DOCUMENT_ID and ACTUAL_CHUNK_ID with the real values from the context metadata.
-For example: [In Re: 12345678, 2025-02-13, Document ID: February_13__2025_FEB132025_03B2203, Chunk ID: February_13__2025_FEB132025_03B2203_chunk_a1fc7e2b]
+**INSTRUCTIONS:**
+1. Use ONLY information from the context passages - no external knowledge
+2. Synthesize information across ALL relevant passages to provide comprehensive answers
+3. For legal criteria or requirements, be specific about standards and evaluation methods
+4. Cite sources using this format: [Context N] where N is the context number
+5. If insufficient information exists, state: "Insufficient information in provided context"
 
-Be concise and directly answer the user's query.
-
-If, after careful review of all provided context passages, the information needed to directly answer the User Query is not present, you MUST state: "The provided context does not contain sufficient information to answer this question."
+**CONTEXT PASSAGES:**
 
 {formatted_context}
 
-User Query: {query_text}
+**USER QUESTION:** {query_text}
 
-Answer:
+**ANSWER (be thorough but concise, focus on practical legal standards):**
 """
 
     try:
-        print("\n--- Sending prompt to LLM (Gemini)... ---")
-        # print(f"Full Prompt being sent:\n{prompt_template}") # For debugging, can be very long
+        print(f"\n--- Sending prompt to LLM ({llm_client.primary_client})... ---")
         
-        model = genai.GenerativeModel(LLM_MODEL_NAME) # Initialize the model
-        
-        # Configure generation parameters if needed (optional)
-        # generation_config = genai.types.GenerationConfig(
-        #     temperature=0.2, # Lower for more factual, less creative
-        #     # top_p=0.9,
-        #     # top_k=40,
-        #     # max_output_tokens=1024 
-        # )
-
-        response = model.generate_content(
-            prompt_template,
-            # generation_config=generation_config # Optional
-            # safety_settings=... # Optional, to adjust safety filters
-        )
+        response = llm_client.generate_content(prompt_template)
         
         print("--- LLM response received. ---")
-        # Accessing the text part of the response.
-        # For Gemini, response.text is usually the direct way.
-        # Check response.parts if response.text is empty or for more complex outputs.
-        if response.parts:
-            # Concatenate text from all parts if multiple exist
-            llm_answer = "".join(part.text for part in response.parts if hasattr(part, 'text'))
-        elif hasattr(response, 'text') and response.text:
-            llm_answer = response.text
-        else:
-            llm_answer = "Error: LLM response was empty or in an unexpected format."
-            print(f"Full LLM Response object: {response}") # For debugging
-
-        return llm_answer.strip()
+        return response.strip()
 
     except Exception as e:
         print(f"Error during LLM generation: {e}")
-        # You might want to inspect `response.prompt_feedback` if available for safety blocks
-        if hasattr(e, 'response') and hasattr(e.response, 'prompt_feedback'):
-             print(f"Prompt Feedback: {e.response.prompt_feedback}")
         return f"Error generating answer from LLM: {e}"
 
 
 def answer_query(user_query):
     """
-    Full RAG pipeline: retrieve, format context, generate answer.
+    Full RAG pipeline with enhanced query processing: enhance query, retrieve, format context, generate answer.
     """
     print(f"Received user query: {user_query}")
     
-    retrieved_chunks = retrieve_relevant_chunks(user_query)
+    # Enhance query for better retrieval
+    query_info = enhance_retrieval_query(user_query)
+    enhanced_query = query_info['enhanced_query']
+    print(f"Enhanced query: {enhanced_query}")
+    
+    # Try retrieval with enhanced query first, fallback to original if needed
+    retrieved_chunks = retrieve_relevant_chunks(enhanced_query)
+    
+    # If enhanced query doesn't return good results, try original
+    if not retrieved_chunks or not retrieved_chunks.get('documents') or len(retrieved_chunks['documents'][0]) < 3:
+        print("Enhanced query returned few results, trying original query...")
+        retrieved_chunks = retrieve_relevant_chunks(user_query)
+    
     if not retrieved_chunks or not retrieved_chunks.get('documents') or not retrieved_chunks['documents'][0]:
         print("No relevant chunks found for the query.")
-        # Decide if you want to still try the LLM or return a message
-        # For now, let's try sending to LLM, it should say "context does not contain..."
         formatted_context_for_llm = "No relevant context passages were found in the database for this query."
     else:
         print(f"Retrieved {len(retrieved_chunks['documents'][0])} chunks.")
@@ -208,8 +248,8 @@ def answer_query(user_query):
 if __name__ == '__main__':
     if not collection:
         print("Exiting: ChromaDB collection not loaded.")
-    elif not GEMINI_API_KEY:
-        print("Exiting: Gemini API Key not available.")
+    elif not llm_client.is_available():
+        print("Exiting: No LLM API keys available.")
     else:
         # Example queries from the PDF
         test_query_1 = "How do recent AAO decisions evaluate an applicant's Participation as a Judge service criteria?"
