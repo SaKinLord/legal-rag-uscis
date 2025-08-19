@@ -1,6 +1,7 @@
 absl-py==2.3.0
 annotated-types==0.7.0
 anthropic==0.34.0
+colorama==0.4.6
 anyio==4.9.0
 appdirs==1.4.4
 argon2-cffi==23.1.0
